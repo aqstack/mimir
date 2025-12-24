@@ -218,10 +218,6 @@ func DashboardHTML() string {
                 <div class="stat-value purple" id="avgLatency">--ms</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Est. Savings</div>
-                <div class="stat-value yellow" id="savings">$--</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-label">Cache Hits</div>
                 <div class="stat-value" id="cacheHits">--</div>
             </div>
@@ -366,7 +362,6 @@ func DashboardHTML() string {
                 document.getElementById('hitRate').textContent = data.hit_rate.toFixed(1) + '%';
                 document.getElementById('totalRequests').textContent = data.total_requests.toLocaleString();
                 document.getElementById('avgLatency').textContent = data.avg_latency_ms.toFixed(1) + 'ms';
-                document.getElementById('savings').textContent = '$' + data.total_savings_usd.toFixed(4);
                 document.getElementById('cacheHits').textContent = data.total_hits.toLocaleString();
                 document.getElementById('cacheMisses').textContent = data.total_misses.toLocaleString();
                 document.getElementById('reqPerMin').textContent = data.requests_per_min.toFixed(1);
