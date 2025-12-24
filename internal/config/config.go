@@ -14,10 +14,16 @@ type Config struct {
 	Host    string `json:"host"`
 	LogJSON bool   `json:"log_json"`
 
-	// OpenAI settings
-	OpenAIAPIKey     string `json:"openai_api_key"`
-	OpenAIBaseURL    string `json:"openai_base_url"`
-	EmbeddingModel   string `json:"embedding_model"`
+	// Embedding settings
+	EmbeddingProvider string `json:"embedding_provider"` // "openai" or "ollama"
+	EmbeddingModel    string `json:"embedding_model"`
+
+	// OpenAI settings (when provider is "openai")
+	OpenAIAPIKey  string `json:"openai_api_key"`
+	OpenAIBaseURL string `json:"openai_base_url"`
+
+	// Ollama settings (when provider is "ollama")
+	OllamaBaseURL string `json:"ollama_base_url"`
 
 	// Cache settings
 	SimilarityThreshold float64       `json:"similarity_threshold"`
@@ -32,12 +38,14 @@ type Config struct {
 // DefaultConfig returns the default configuration.
 func DefaultConfig() *Config {
 	return &Config{
-		Port:                8080,
-		Host:                "0.0.0.0",
-		LogJSON:             false,
-		OpenAIAPIKey:        "",
-		OpenAIBaseURL:       "https://api.openai.com/v1",
-		EmbeddingModel:      "text-embedding-3-small",
+		Port:              8080,
+		Host:              "0.0.0.0",
+		LogJSON:           false,
+		EmbeddingProvider: "ollama", // default to free local embeddings
+		EmbeddingModel:    "nomic-embed-text",
+		OpenAIAPIKey:      "",
+		OpenAIBaseURL:     "https://api.openai.com/v1",
+		OllamaBaseURL:     "http://localhost:11434",
 		SimilarityThreshold: 0.95,
 		CacheTTL:            time.Hour * 24,
 		MaxCacheSize:        10000,
@@ -64,16 +72,31 @@ func LoadFromEnv() *Config {
 		cfg.LogJSON = true
 	}
 
+	if provider := os.Getenv("KALLM_EMBEDDING_PROVIDER"); provider != "" {
+		cfg.EmbeddingProvider = provider
+	}
+
+	if model := os.Getenv("KALLM_EMBEDDING_MODEL"); model != "" {
+		cfg.EmbeddingModel = model
+	}
+
 	if apiKey := os.Getenv("OPENAI_API_KEY"); apiKey != "" {
 		cfg.OpenAIAPIKey = apiKey
+		// Auto-switch to OpenAI if API key is provided
+		if os.Getenv("KALLM_EMBEDDING_PROVIDER") == "" {
+			cfg.EmbeddingProvider = "openai"
+			if os.Getenv("KALLM_EMBEDDING_MODEL") == "" {
+				cfg.EmbeddingModel = "text-embedding-3-small"
+			}
+		}
 	}
 
 	if baseURL := os.Getenv("OPENAI_BASE_URL"); baseURL != "" {
 		cfg.OpenAIBaseURL = baseURL
 	}
 
-	if model := os.Getenv("KALLM_EMBEDDING_MODEL"); model != "" {
-		cfg.EmbeddingModel = model
+	if ollamaURL := os.Getenv("OLLAMA_BASE_URL"); ollamaURL != "" {
+		cfg.OllamaBaseURL = ollamaURL
 	}
 
 	if threshold := os.Getenv("KALLM_SIMILARITY_THRESHOLD"); threshold != "" {
@@ -109,8 +132,11 @@ func LoadFromEnv() *Config {
 
 // Validate validates the configuration.
 func (c *Config) Validate() error {
-	if c.OpenAIAPIKey == "" {
-		return &ConfigError{Field: "OPENAI_API_KEY", Message: "required but not set"}
+	if c.EmbeddingProvider != "openai" && c.EmbeddingProvider != "ollama" {
+		return &ConfigError{Field: "KALLM_EMBEDDING_PROVIDER", Message: "must be 'openai' or 'ollama'"}
+	}
+	if c.EmbeddingProvider == "openai" && c.OpenAIAPIKey == "" {
+		return &ConfigError{Field: "OPENAI_API_KEY", Message: "required when using OpenAI provider"}
 	}
 	if c.SimilarityThreshold < 0 || c.SimilarityThreshold > 1 {
 		return &ConfigError{Field: "KALLM_SIMILARITY_THRESHOLD", Message: "must be between 0 and 1"}
