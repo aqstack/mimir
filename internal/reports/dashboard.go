@@ -537,7 +537,7 @@ ${content}` + "`" + `;
 
             for (let i = 0; i < count; i++) {
                 const prompt = prompts[i % prompts.length];
-                status.textContent = ` + "`" + `Sending ${i + 1}/${count}: "${prompt.substring(0, 30)}..."` + "`" + `;
+                status.textContent = ` + "`" + `Sending ${i + 1}/${count}: "${prompt}"` + "`" + `;
                 progress.style.width = ((i + 1) / count * 100) + '%';
 
                 try {
