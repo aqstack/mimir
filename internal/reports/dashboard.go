@@ -276,6 +276,22 @@ func DashboardHTML() string {
             <div id="logsContainer" class="logs-container"></div>
         </div>
 
+        <div class="table-card">
+            <h3>Recent Requests</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Status</th>
+                        <th>Similarity</th>
+                        <th>Latency</th>
+                        <th>Prompt</th>
+                    </tr>
+                </thead>
+                <tbody id="requestsTable"></tbody>
+            </table>
+        </div>
+
         <div class="charts-grid">
             <div class="chart-card">
                 <h3>Hit Rate Over Time (%)</h3>
@@ -293,22 +309,6 @@ func DashboardHTML() string {
                 <h3>Similarity Distribution (Cache Hits)</h3>
                 <div class="chart-container"><canvas id="similarityDistChart"></canvas></div>
             </div>
-        </div>
-
-        <div class="table-card">
-            <h3>Recent Requests</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>Status</th>
-                        <th>Similarity</th>
-                        <th>Latency</th>
-                        <th>Prompt</th>
-                    </tr>
-                </thead>
-                <tbody id="requestsTable"></tbody>
-            </table>
         </div>
 
         <div class="refresh-info">Auto-refreshes every 5 seconds</div>
