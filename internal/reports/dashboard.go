@@ -265,9 +265,11 @@ func DashboardHTML() string {
                         <label>Delay (ms): <input type="number" id="trafficDelay" value="100" min="0" max="5000"></label>
                     </div>
                     <div class="traffic-presets">
-                        <button onclick="generateTraffic('identical')">Identical Queries</button>
-                        <button onclick="generateTraffic('similar')">Similar Queries</button>
-                        <button onclick="generateTraffic('random')">Random Queries</button>
+                        <button onclick="generateTraffic('identical')" title="Same query repeated - 100% cache hits expected">Identical</button>
+                        <button onclick="generateTraffic('similar')" title="Semantically similar queries - high cache hit rate expected">Similar</button>
+                        <button onclick="generateTraffic('coding')" title="Programming questions with variations">Coding</button>
+                        <button onclick="generateTraffic('devops')" title="DevOps/infrastructure questions">DevOps</button>
+                        <button onclick="generateTraffic('random')" title="Diverse topics - mostly cache misses expected">Random</button>
                     </div>
                     <div id="trafficStatus" class="test-result"></div>
                     <div class="progress-bar"><div id="trafficProgress"></div></div>
@@ -446,25 +448,74 @@ ${content}` + "`" + `;
 
         // Traffic generator
         const trafficPrompts = {
-            identical: ['What is 2+2?'],
+            identical: ['Explain the difference between SQL and NoSQL databases'],
             similar: [
-                'What is 2+2?',
-                'What is two plus two?',
-                'Calculate 2 + 2',
-                'What does 2+2 equal?',
-                'Tell me the sum of 2 and 2'
+                // Database questions - should have high semantic similarity
+                'Explain the difference between SQL and NoSQL databases',
+                'What are the key differences between SQL and NoSQL?',
+                'Compare SQL databases to NoSQL databases',
+                'SQL vs NoSQL - what is the difference?',
+                'How do relational databases differ from NoSQL databases?',
+                // Python questions - should have high semantic similarity
+                'How do I read a file in Python?',
+                'What is the Python code to read a file?',
+                'Show me how to open and read a file in Python',
+                'Python file reading example',
+                // API questions
+                'What is a REST API?',
+                'Explain REST APIs',
+                'What does REST API mean?',
+                'How do REST APIs work?'
             ],
             random: [
-                'What is the capital of France?',
-                'Explain quantum computing',
-                'Write a haiku about coding',
-                'What is machine learning?',
-                'How does the internet work?',
-                'What is 2+2?',
-                'Describe the solar system',
-                'What is artificial intelligence?',
-                'How do computers work?',
-                'Explain blockchain'
+                'Explain the difference between TCP and UDP protocols',
+                'What is the time complexity of quicksort?',
+                'How does garbage collection work in Java?',
+                'Explain the CAP theorem in distributed systems',
+                'What is the difference between process and thread?',
+                'How does HTTPS encryption work?',
+                'Explain microservices architecture',
+                'What is Docker and how does containerization work?',
+                'Explain the concept of eventual consistency',
+                'What is a load balancer and how does it work?',
+                'Describe the differences between REST and GraphQL',
+                'How does DNS resolution work?',
+                'What is the purpose of an index in a database?',
+                'Explain OAuth 2.0 authentication flow',
+                'What is the difference between horizontal and vertical scaling?',
+                'How do WebSockets differ from HTTP?',
+                'Explain the concept of database sharding',
+                'What is a reverse proxy?',
+                'How does Redis caching work?',
+                'Explain the publish-subscribe pattern'
+            ],
+            coding: [
+                'Write a function to reverse a string in Python',
+                'How do I reverse a string in Python?',
+                'Python code to reverse a string',
+                'Show me string reversal in Python',
+                'Implement a function to check if a number is prime',
+                'Write code to check for prime numbers',
+                'How to determine if a number is prime?',
+                'Prime number checking algorithm',
+                'How do I sort a list in Python?',
+                'Python list sorting methods',
+                'Sort a list in ascending order Python',
+                'What is the best way to sort lists in Python?'
+            ],
+            devops: [
+                'How do I create a Kubernetes deployment?',
+                'Kubernetes deployment YAML example',
+                'Create a deployment in K8s',
+                'Write a Kubernetes deployment manifest',
+                'How to set up a CI/CD pipeline?',
+                'Explain CI/CD pipeline setup',
+                'What are the steps to create a CI/CD pipeline?',
+                'CI/CD best practices',
+                'How do I write a Dockerfile?',
+                'Dockerfile example for a Python app',
+                'Create a Docker image for Python application',
+                'Best practices for writing Dockerfiles'
             ]
         };
 
