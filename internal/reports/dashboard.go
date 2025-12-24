@@ -246,10 +246,6 @@ func DashboardHTML() string {
                 <div class="stat-label">Requests/min</div>
                 <div class="stat-value" id="reqPerMin">--</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Uptime</div>
-                <div class="stat-value" id="uptime">--</div>
-            </div>
         </div>
 
         <div class="charts-grid">
@@ -382,7 +378,6 @@ func DashboardHTML() string {
                 document.getElementById('cacheHits').textContent = data.total_hits.toLocaleString();
                 document.getElementById('cacheMisses').textContent = data.total_misses.toLocaleString();
                 document.getElementById('reqPerMin').textContent = data.requests_per_min.toFixed(1);
-                document.getElementById('uptime').textContent = data.uptime;
 
                 // Update hit rate chart
                 if (data.hit_rate_history && data.hit_rate_history.length > 0) {

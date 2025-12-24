@@ -288,10 +288,6 @@
                 <div class="stat-label">Requests/min</div>
                 <div class="stat-value" id="reqPerMin">--</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-label">Uptime</div>
-                <div class="stat-value" id="uptime">--</div>
-            </div>
         </div>
 
         <div class="charts-grid">
@@ -433,7 +429,6 @@
                 document.getElementById('cacheHits').textContent = data.total_hits.toLocaleString();
                 document.getElementById('cacheMisses').textContent = data.total_misses.toLocaleString();
                 document.getElementById('reqPerMin').textContent = data.requests_per_min.toFixed(1);
-                document.getElementById('uptime').textContent = data.uptime;
 
                 if (data.hit_rate_history && data.hit_rate_history.length > 0) {
                     hitRateChart.data.labels = data.hit_rate_history.map(p => formatTime(p.timestamp));
