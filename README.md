@@ -23,8 +23,8 @@ kallm is a drop-in proxy that caches LLM API responses using semantic similarity
 └─────────────┘     └──────┬──────┘     └─────────────┘
                            │
                     ┌──────▼──────┐
-                    │ Vector Store │
-                    │  (embeddings)│
+                    │ Vector Store│
+                    │ (embeddings)│
                     └─────────────┘
 ```
 
