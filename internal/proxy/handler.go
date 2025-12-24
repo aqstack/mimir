@@ -15,16 +15,18 @@ import (
 	"github.com/aqstack/kallm/internal/config"
 	"github.com/aqstack/kallm/internal/embedding"
 	"github.com/aqstack/kallm/internal/logger"
+	"github.com/aqstack/kallm/internal/reports"
 	"github.com/aqstack/kallm/pkg/api"
 )
 
 // Handler handles proxied requests with semantic caching.
 type Handler struct {
-	cfg      *config.Config
-	cache    cache.Cache
-	embedder embedding.Embedder
-	client   *http.Client
-	logger   *logger.Logger
+	cfg       *config.Config
+	cache     cache.Cache
+	embedder  embedding.Embedder
+	client    *http.Client
+	logger    *logger.Logger
+	collector *reports.Collector
 }
 
 // NewHandler creates a new proxy handler.
@@ -36,7 +38,8 @@ func NewHandler(cfg *config.Config, c cache.Cache, e embedding.Embedder, log *lo
 		client: &http.Client{
 			Timeout: 2 * time.Minute,
 		},
-		logger: log,
+		logger:    log,
+		collector: reports.NewCollector(),
 	}
 }
 
@@ -47,6 +50,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleHealth(w, r)
 	case r.URL.Path == "/stats":
 		h.handleStats(w, r)
+	case r.URL.Path == "/reports" || r.URL.Path == "/reports/":
+		h.handleDashboard(w, r)
+	case r.URL.Path == "/reports/data":
+		h.handleReportsData(w, r)
 	case r.URL.Path == "/v1/chat/completions":
 		h.handleChatCompletions(w, r)
 	case strings.HasPrefix(r.URL.Path, "/v1/"):
@@ -110,10 +117,15 @@ func (h *Handler) handleChatCompletions(w http.ResponseWriter, r *http.Request) 
 
 	// Check cache
 	if entry, similarity, found := h.cache.Get(ctx, emb, h.cfg.SimilarityThreshold); found {
+		latencyMs := time.Since(startTime).Milliseconds()
 		h.logger.Info("cache hit",
 			"similarity", fmt.Sprintf("%.4f", similarity),
-			"latency_ms", time.Since(startTime).Milliseconds(),
+			"latency_ms", latencyMs,
 		)
+
+		// Record metrics - estimate tokens saved based on response
+		tokensSaved := entry.Response.Usage.TotalTokens
+		h.collector.RecordRequest(true, similarity, latencyMs, tokensSaved)
 
 		// Return cached response with cache header
 		w.Header().Set("Content-Type", "application/json")
@@ -163,9 +175,14 @@ func (h *Handler) handleChatCompletions(w http.ResponseWriter, r *http.Request) 
 	w.WriteHeader(resp.StatusCode)
 	w.Write(respBody)
 
+	latencyMs := time.Since(startTime).Milliseconds()
+
+	// Record cache miss metric
+	h.collector.RecordRequest(false, 0, latencyMs, 0)
+
 	h.logger.Info("upstream request completed",
 		"status", resp.StatusCode,
-		"latency_ms", time.Since(startTime).Milliseconds(),
+		"latency_ms", latencyMs,
 	)
 }
 
@@ -261,4 +278,17 @@ func (h *Handler) writeError(w http.ResponseWriter, message string, status int) 
 			Type:    "kallm_error",
 		},
 	})
+}
+
+// handleDashboard serves the performance dashboard HTML.
+func (h *Handler) handleDashboard(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Write([]byte(reports.DashboardHTML()))
+}
+
+// handleReportsData serves the performance report data as JSON.
+func (h *Handler) handleReportsData(w http.ResponseWriter, r *http.Request) {
+	report := h.collector.GetReport()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(report)
 }
