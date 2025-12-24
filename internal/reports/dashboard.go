@@ -271,6 +271,11 @@ func DashboardHTML() string {
             </div>
         </div>
 
+        <div class="table-card logs-panel">
+            <h3>Live Logs <button onclick="clearLogs()" style="float:right;padding:2px 8px;font-size:0.7rem;background:#475569;border:none;color:#e2e8f0;border-radius:4px;cursor:pointer">Clear</button></h3>
+            <div id="logsContainer" class="logs-container"></div>
+        </div>
+
         <div class="charts-grid">
             <div class="chart-card">
                 <h3>Hit Rate Over Time (%)</h3>
@@ -288,11 +293,6 @@ func DashboardHTML() string {
                 <h3>Similarity Distribution (Cache Hits)</h3>
                 <div class="chart-container"><canvas id="similarityDistChart"></canvas></div>
             </div>
-        </div>
-
-        <div class="table-card logs-panel">
-            <h3>Live Logs <button onclick="clearLogs()" style="float:right;padding:2px 8px;font-size:0.7rem;background:#475569;border:none;color:#e2e8f0;border-radius:4px;cursor:pointer">Clear</button></h3>
-            <div id="logsContainer" class="logs-container"></div>
         </div>
 
         <div class="table-card">
