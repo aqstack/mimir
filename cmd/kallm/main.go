@@ -56,17 +56,30 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize embedder
-	embedder := embedding.NewOpenAIEmbedder(&embedding.OpenAIConfig{
-		APIKey:  cfg.OpenAIAPIKey,
-		BaseURL: cfg.OpenAIBaseURL,
-		Model:   cfg.EmbeddingModel,
-	})
-
-	log.Info("initialized embedder",
-		"model", embedder.Model(),
-		"dimensions", embedder.Dimensions(),
-	)
+	// Initialize embedder based on provider
+	var embedder embedding.Embedder
+	switch cfg.EmbeddingProvider {
+	case "ollama":
+		embedder = embedding.NewOllamaEmbedder(&embedding.OllamaConfig{
+			BaseURL: cfg.OllamaBaseURL,
+			Model:   cfg.EmbeddingModel,
+		})
+		log.Info("initialized Ollama embedder",
+			"base_url", cfg.OllamaBaseURL,
+			"model", embedder.Model(),
+			"dimensions", embedder.Dimensions(),
+		)
+	case "openai":
+		embedder = embedding.NewOpenAIEmbedder(&embedding.OpenAIConfig{
+			APIKey:  cfg.OpenAIAPIKey,
+			BaseURL: cfg.OpenAIBaseURL,
+			Model:   cfg.EmbeddingModel,
+		})
+		log.Info("initialized OpenAI embedder",
+			"model", embedder.Model(),
+			"dimensions", embedder.Dimensions(),
+		)
+	}
 
 	// Initialize cache
 	semanticCache := cache.NewMemoryCache(&cache.Options{
