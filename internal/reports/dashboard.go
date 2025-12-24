@@ -178,6 +178,23 @@ func DashboardHTML() string {
             width: 0%;
             transition: width 0.3s;
         }
+
+        .logs-panel { margin-bottom: 1rem; }
+        .logs-container {
+            background: #0f172a;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.7rem;
+            height: 200px;
+            overflow-y: auto;
+            line-height: 1.4;
+        }
+        .log-line { margin: 2px 0; }
+        .log-line.hit { color: #4ade80; }
+        .log-line.miss { color: #f87171; }
+        .log-line.info { color: #94a3b8; }
+        .log-line.error { color: #facc15; }
     </style>
 </head>
 <body>
@@ -275,6 +292,11 @@ func DashboardHTML() string {
                     <div class="progress-bar"><div id="trafficProgress"></div></div>
                 </div>
             </div>
+        </div>
+
+        <div class="table-card logs-panel">
+            <h3>Live Logs <button onclick="clearLogs()" style="float:right;padding:2px 8px;font-size:0.7rem;background:#475569;border:none;color:#e2e8f0;border-radius:4px;cursor:pointer">Clear</button></h3>
+            <div id="logsContainer" class="logs-container"></div>
         </div>
 
         <div class="table-card">
@@ -384,13 +406,13 @@ func DashboardHTML() string {
                 if (data.recent_requests) {
                     data.recent_requests.slice(0, 20).forEach(req => {
                         const tr = document.createElement('tr');
-                        const prompt = req.prompt ? req.prompt.substring(0, 50) + (req.prompt.length > 50 ? '...' : '') : '-';
+                        const prompt = req.prompt ? req.prompt.replace(/\n/g, ' ') : '-';
                         tr.innerHTML = ` + "`" + `
-                            <td>${formatTime(req.timestamp)}</td>
+                            <td style="white-space:nowrap">${formatTime(req.timestamp)}</td>
                             <td><span class="badge ${req.cache_hit ? 'hit' : 'miss'}">${req.cache_hit ? 'HIT' : 'MISS'}</span></td>
-                            <td>${req.cache_hit ? (req.similarity * 100).toFixed(2) + '%' : '-'}</td>
-                            <td>${req.latency_ms}ms</td>
-                            <td title="${req.prompt || ''}">${prompt}</td>
+                            <td style="white-space:nowrap">${req.cache_hit ? (req.similarity * 100).toFixed(2) + '%' : '-'}</td>
+                            <td style="white-space:nowrap">${req.latency_ms}ms</td>
+                            <td style="word-break:break-word">${prompt}</td>
                         ` + "`" + `;
                         tbody.appendChild(tr);
                     });
@@ -572,6 +594,33 @@ ${content}` + "`" + `;
         document.getElementById('testPrompt').addEventListener('keydown', (e) => {
             if (e.ctrlKey && e.key === 'Enter') sendTestPrompt();
         });
+
+        // Logs functionality
+        async function fetchLogs() {
+            try {
+                const resp = await fetch('/reports/logs');
+                const logs = await resp.json();
+                const container = document.getElementById('logsContainer');
+
+                container.innerHTML = logs.map(log => {
+                    const time = new Date(log.timestamp).toLocaleTimeString();
+                    const cls = log.level === 'hit' ? 'hit' : log.level === 'miss' ? 'miss' : 'info';
+                    return ` + "`" + `<div class="log-line ${cls}">[${time}] ${log.message}</div>` + "`" + `;
+                }).join('');
+
+                container.scrollTop = container.scrollHeight;
+            } catch (e) {
+                console.error('Failed to fetch logs:', e);
+            }
+        }
+
+        async function clearLogs() {
+            await fetch('/reports/logs/clear');
+            document.getElementById('logsContainer').innerHTML = '';
+        }
+
+        fetchLogs();
+        setInterval(fetchLogs, 2000);
     </script>
 </body>
 </html>`

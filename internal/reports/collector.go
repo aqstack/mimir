@@ -23,6 +23,13 @@ type RequestMetric struct {
 	Prompt      string    `json:"prompt,omitempty"`
 }
 
+// LogEntry represents a log entry.
+type LogEntry struct {
+	Timestamp time.Time `json:"timestamp"`
+	Level     string    `json:"level"`
+	Message   string    `json:"message"`
+}
+
 // Collector collects and aggregates performance metrics over time.
 type Collector struct {
 	mu sync.RWMutex
@@ -31,6 +38,10 @@ type Collector struct {
 	requests    []RequestMetric
 	maxRequests int
 	requestIdx  int
+
+	// Log buffer (ring buffer)
+	logs    []LogEntry
+	maxLogs int
 
 	// Aggregated time-series data (per minute)
 	hitRateHistory    []DataPoint
@@ -60,6 +71,8 @@ func NewCollector() *Collector {
 	return &Collector{
 		requests:          make([]RequestMetric, 0, 1000),
 		maxRequests:       1000,
+		logs:              make([]LogEntry, 0, 100),
+		maxLogs:           100,
 		hitRateHistory:    make([]DataPoint, 0, 60),   // 1 hour at 1-min resolution
 		latencyHistory:    make([]DataPoint, 0, 60),
 		savingsHistory:    make([]DataPoint, 0, 60),
@@ -327,5 +340,39 @@ func formatDuration(d time.Duration) string {
 		return fmt.Sprintf("%dh %dm", hours, mins)
 	}
 	return fmt.Sprintf("%dm", mins)
+}
+
+// AddLog adds a log entry to the buffer.
+func (c *Collector) AddLog(level, message string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	entry := LogEntry{
+		Timestamp: time.Now(),
+		Level:     level,
+		Message:   message,
+	}
+
+	if len(c.logs) >= c.maxLogs {
+		c.logs = c.logs[1:]
+	}
+	c.logs = append(c.logs, entry)
+}
+
+// GetLogs returns recent log entries.
+func (c *Collector) GetLogs() []LogEntry {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	result := make([]LogEntry, len(c.logs))
+	copy(result, c.logs)
+	return result
+}
+
+// ClearLogs clears all log entries.
+func (c *Collector) ClearLogs() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.logs = make([]LogEntry, 0, c.maxLogs)
 }
 

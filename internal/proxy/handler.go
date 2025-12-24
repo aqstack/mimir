@@ -54,6 +54,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.handleDashboard(w, r)
 	case r.URL.Path == "/reports/data":
 		h.handleReportsData(w, r)
+	case r.URL.Path == "/reports/logs":
+		h.handleLogs(w, r)
+	case r.URL.Path == "/reports/logs/clear":
+		h.handleClearLogs(w, r)
 	case r.URL.Path == "/v1/chat/completions":
 		h.handleChatCompletions(w, r)
 	case strings.HasPrefix(r.URL.Path, "/v1/"):
@@ -126,6 +130,7 @@ func (h *Handler) handleChatCompletions(w http.ResponseWriter, r *http.Request) 
 		// Record metrics - estimate tokens saved based on response
 		tokensSaved := entry.Response.Usage.TotalTokens
 		h.collector.RecordRequest(true, similarity, latencyMs, tokensSaved, cacheKey)
+		h.collector.AddLog("hit", fmt.Sprintf("[HIT] %.2f%% sim, %dms - %s", similarity*100, latencyMs, truncatePrompt(cacheKey, 80)))
 
 		// Return cached response with cache header
 		w.Header().Set("Content-Type", "application/json")
@@ -179,6 +184,7 @@ func (h *Handler) handleChatCompletions(w http.ResponseWriter, r *http.Request) 
 
 	// Record cache miss metric
 	h.collector.RecordRequest(false, 0, latencyMs, 0, cacheKey)
+	h.collector.AddLog("miss", fmt.Sprintf("[MISS] %dms - %s", latencyMs, truncatePrompt(cacheKey, 80)))
 
 	h.logger.Info("upstream request completed",
 		"status", resp.StatusCode,
@@ -291,4 +297,27 @@ func (h *Handler) handleReportsData(w http.ResponseWriter, r *http.Request) {
 	report := h.collector.GetReport()
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(report)
+}
+
+// handleLogs serves the recent logs as JSON.
+func (h *Handler) handleLogs(w http.ResponseWriter, r *http.Request) {
+	logs := h.collector.GetLogs()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(logs)
+}
+
+// handleClearLogs clears the log buffer.
+func (h *Handler) handleClearLogs(w http.ResponseWriter, r *http.Request) {
+	h.collector.ClearLogs()
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{"status": "cleared"})
+}
+
+// truncatePrompt truncates a prompt for display.
+func truncatePrompt(s string, maxLen int) string {
+	s = strings.ReplaceAll(s, "\n", " ")
+	if len(s) > maxLen {
+		return s[:maxLen-3] + "..."
+	}
+	return s
 }
